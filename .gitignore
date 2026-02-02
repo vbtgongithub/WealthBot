@@ -1,0 +1,75 @@
+# =============================================================================
+# WealthBot .gitignore
+# =============================================================================
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ML Models (large files)
+ml/models/*.pkl
+ml/models/*.joblib
+ml/models/*.pt
+ml/models/*.bin
+!ml/models/.gitkeep
+
+# Data (sensitive)
+data/
+*.csv
+*.parquet
+*.json
+!**/fixtures/*.json
+
+# Logs
+logs/
+*.log
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db

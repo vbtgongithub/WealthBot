@@ -1,0 +1,3 @@
+# Placeholder for ML model artifacts
+# Model files (.pkl, .joblib, .pt) are gitignored
+# This file ensures the directory is tracked in version control
