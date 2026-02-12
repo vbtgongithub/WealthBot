@@ -26,6 +26,13 @@ WealthBot/
 │   ├── db/               # Database models & connections
 │   ├── schemas/          # Pydantic request/response schemas
 │   └── services/         # Business logic & ML integration
+├── frontend/              # Next.js Frontend (Aura.fi)
+│   ├── src/
+│   │   ├── app/          # Next.js App Router pages
+│   │   ├── components/   # React components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── stores/       # Zustand state management
+│   │   └── types/        # TypeScript definitions
 ├── ml/                    # Machine Learning Lifecycle
 │   ├── models/           # Trained model artifacts
 │   ├── training/         # Model training pipelines
@@ -88,6 +95,31 @@ docker-compose up -d db
 # Run FastAPI development server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+### 5. Start Frontend (Aura.fi)
+
+```bash
+# Navigate to frontend
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Open http://localhost:3000
+```
+
+## 🎨 Frontend Features
+
+The Aura.fi frontend provides a modern, dark-themed financial dashboard:
+
+- **Dashboard** - Net worth tracking, spending analytics, financial forecasting
+- **Transactions** - Full history with filtering, search, and categorization
+- **Budgets** - Visual budget tracking with progress indicators
+- **Investments** - Portfolio performance charts and holdings overview
+- **AI Assistant** - Integrated AI-powered financial assistant (Aura)
 
 ## 📡 API Endpoints
 

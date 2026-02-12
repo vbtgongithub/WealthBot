@@ -70,6 +70,12 @@ htmlcov/
 # Docker
 docker-compose.override.yml
 
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+
 # OS
 .DS_Store
 Thumbs.db
