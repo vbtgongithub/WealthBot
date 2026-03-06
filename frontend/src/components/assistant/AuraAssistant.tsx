@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, MoreHorizontal, X, Bot } from 'lucide-react';
+import { Send, MoreHorizontal, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AssistantMessage, AssistantAction } from '@/types';
 
@@ -93,7 +93,6 @@ export function AuraAssistant({
   className,
 }: AuraAssistantProps) {
   const [inputValue, setInputValue] = useState('');
-  const [isExpanded, setIsExpanded] = useState(true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +109,7 @@ export function AuraAssistant({
   return (
     <aside
       className={cn(
-        'w-80 bg-background-secondary border-l border-border-primary h-full flex flex-col',
+        'w-80 max-w-[100vw] bg-background-secondary border-l border-border-primary h-full flex flex-col',
         className
       )}
     >
@@ -160,7 +159,7 @@ export function AuraAssistant({
           <button
             type="submit"
             disabled={!inputValue.trim()}
-            className="p-1.5 rounded-lg bg-accent-green/20 text-accent-green hover:bg-accent-green/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-accent-green/20 text-accent-green hover:bg-accent-green/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>

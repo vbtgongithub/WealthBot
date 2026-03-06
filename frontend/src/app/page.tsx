@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { MainLayout, Header } from '@/components/layout';
-import { RefreshCw } from 'lucide-react';
-import { useUserStore } from '@/stores/userStore';
+import { RefreshCw, Loader2 } from 'lucide-react';
+import { useRequireAuth, useSafeToSpend, useTransactions } from '@/hooks';
 import { QUICK_ACTIONS, CATEGORY_CONFIG } from '@/constants/data';
 import { formatCurrency, getGaugeColor } from '@/lib/utils';
 import type { AssistantMessage } from '@/types';
@@ -23,7 +23,7 @@ function SafeToSpendGauge({ amount, max = 2000 }: { amount: number; max?: number
 
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 240 140" className="w-72 h-40">
+      <svg viewBox="0 0 240 140" className="w-56 sm:w-72 h-32 sm:h-40">
         {/* Track */}
         <path
           d="M 20 130 A 100 100 0 0 1 220 130"
@@ -56,6 +56,34 @@ function SafeToSpendGauge({ amount, max = 2000 }: { amount: number; max?: number
   );
 }
 
+function SkeletonGauge() {
+  return (
+    <div className="flex flex-col items-center py-10">
+      <div className="w-72 h-40 rounded-xl bg-background-hover animate-pulse" />
+      <div className="mt-4 w-40 h-6 rounded-full bg-background-hover animate-pulse" />
+    </div>
+  );
+}
+
+function SkeletonTransactions() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-background-hover animate-pulse" />
+            <div>
+              <div className="w-24 h-4 rounded bg-background-hover animate-pulse" />
+              <div className="w-16 h-3 mt-1 rounded bg-background-hover animate-pulse" />
+            </div>
+          </div>
+          <div className="w-16 h-4 rounded bg-background-hover animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const initialMessages: AssistantMessage[] = [
   {
     id: '1',
@@ -69,11 +97,13 @@ const initialMessages: AssistantMessage[] = [
 ];
 
 export default function HomePage() {
-  const { safeToSpend, safeUntil, transactions, userName, refreshData } = useUserStore();
+  const { user, isLoading: authLoading } = useRequireAuth();
+  const { data: safeToSpend, isLoading: stsLoading, refetch: refetchSTS } = useSafeToSpend();
+  const { data: txPage, isLoading: txLoading } = useTransactions({ limit: 3 });
   const [messages, setMessages] = useState<AssistantMessage[]>(initialMessages);
 
-  // Last 3 transactions for "Recent Activity"
-  const recentTransactions = transactions.slice(0, 3);
+  const recentTransactions = txPage?.data ?? [];
+  const firstName = user?.first_name ?? 'there';
 
   const handleSendMessage = (message: string) => {
     const newMessage: AssistantMessage = {
@@ -85,6 +115,16 @@ export default function HomePage() {
     setMessages([...messages, newMessage]);
   };
 
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-accent-green" />
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout
       assistantMessages={messages}
@@ -92,37 +132,39 @@ export default function HomePage() {
       assistantPlaceholder="Ask WealthBot anything..."
     >
       <Header
-        title={`Hey ${userName} 👋`}
+        title={`Hey ${firstName} 👋`}
         subtitle="Here's your spending pulse for today."
       />
 
       {/* ------------------------------------------------------------------ */}
       {/* Hero: Safe-to-Spend Gauge                                          */}
-      {/* Futuristic, confident, clutter-free                                */}
       {/* ------------------------------------------------------------------ */}
       <div className="card flex flex-col items-center py-10 mb-6 relative overflow-hidden">
-        {/* subtle glow behind gauge */}
-        <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at 50% 80%, ${getGaugeColor(safeToSpend)}40 0%, transparent 60%)`,
-          }}
-        />
+        {stsLoading || !safeToSpend ? (
+          <SkeletonGauge />
+        ) : (
+          <>
+            <div
+              className="absolute inset-0 opacity-10 pointer-events-none"
+              style={{
+                background: `radial-gradient(circle at 50% 80%, ${getGaugeColor(safeToSpend.amount)}40 0%, transparent 60%)`,
+              }}
+            />
 
-        <SafeToSpendGauge amount={safeToSpend} />
+            <SafeToSpendGauge amount={safeToSpend.amount} />
 
-        {/* Contextual pill — tells user "safe until payday" */}
-        <div className="mt-4 px-4 py-1.5 rounded-full bg-background-hover border border-border-primary text-sm text-text-secondary">
-          Safe until <span className="text-accent-green font-semibold">{safeUntil}</span>
-        </div>
+            <div className="mt-4 px-4 py-1.5 rounded-full bg-background-hover border border-border-primary text-sm text-text-secondary">
+              Safe until <span className="text-accent-green font-semibold">{new Date(safeToSpend.safe_until + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+            </div>
 
-        {/* Refresh button — re-runs ML model */}
-        <button
-          onClick={refreshData}
-          className="mt-3 flex items-center gap-1.5 text-xs text-text-muted hover:text-accent-green transition-colors"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Recalculate
-        </button>
+            <button
+              onClick={() => refetchSTS()}
+              className="mt-3 flex items-center gap-1.5 text-xs text-text-muted hover:text-accent-green transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Recalculate
+            </button>
+          </>
+        )}
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -158,41 +200,44 @@ export default function HomePage() {
             View All →
           </a>
         </div>
-        <div className="space-y-3">
-          {recentTransactions.map((tx) => {
-            const config = CATEGORY_CONFIG[tx.category] || CATEGORY_CONFIG.Other;
-            return (
-              <div
-                key={tx.id}
-                className="flex items-center justify-between py-2 border-b border-border-primary last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-sm"
-                    style={{ backgroundColor: `${config.color}20` }}
-                  >
-                    {config.icon}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">{tx.merchant}</p>
-                    <p className="text-xs text-text-muted">
-                      {tx.upiApp && `via ${tx.upiApp} · `}
-                      {tx.category}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={`text-sm font-semibold ${
-                    tx.type === 'credit' ? 'text-accent-green' : 'text-text-primary'
-                  }`}
+        {txLoading ? (
+          <SkeletonTransactions />
+        ) : recentTransactions.length === 0 ? (
+          <p className="text-sm text-text-muted text-center py-6">No transactions yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {recentTransactions.map((tx) => {
+              const config = CATEGORY_CONFIG[tx.category] || CATEGORY_CONFIG.Other;
+              return (
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between py-2 border-b border-border-primary last:border-0"
                 >
-                  {tx.type === 'credit' ? '+' : '-'}
-                  {formatCurrency(tx.amount)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-sm"
+                      style={{ backgroundColor: `${config.color}20` }}
+                    >
+                      {config.icon}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">{tx.merchant_name ?? tx.description ?? 'Unknown'}</p>
+                      <p className="text-xs text-text-muted">{tx.category}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-sm font-semibold ${
+                      tx.transaction_type === 'credit' ? 'text-accent-green' : 'text-text-primary'
+                    }`}
+                  >
+                    {tx.transaction_type === 'credit' ? '+' : '-'}
+                    {formatCurrency(tx.amount)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </MainLayout>
   );

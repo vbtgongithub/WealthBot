@@ -7,9 +7,10 @@ import {
   ArrowLeftRight,
   BarChart3,
   Settings,
-  LogOut,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUserStore } from '@/stores/userStore';
 
 interface NavItem {
   label: string;
@@ -34,17 +35,38 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+  const { sidebarOpen, setSidebarOpen } = useUserStore();
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-background-secondary border-r border-border-primary flex flex-col z-50">
+    <>
+      {/* Backdrop overlay — visible only on mobile/tablet when sidebar is open */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        className={cn(
+          'fixed left-0 top-0 h-full w-64 bg-background-secondary border-r border-border-primary flex flex-col z-50 transition-transform duration-200',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
       {/* Logo */}
-      <div className="p-6">
+      <div className="p-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-accent-green flex items-center justify-center">
             <span className="text-white font-bold text-sm">W</span>
           </div>
           <span className="text-xl font-semibold text-text-primary">WealthBot</span>
         </Link>
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden p-1.5 rounded-lg hover:bg-background-hover text-text-muted"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -58,6 +80,7 @@ export function Sidebar({ user }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={() => setSidebarOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200',
                     isActive
@@ -102,5 +125,6 @@ export function Sidebar({ user }: SidebarProps) {
         </div>
       </div>
     </aside>
+    </>
   );
 }

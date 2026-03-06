@@ -20,32 +20,32 @@ interface ForecastChartProps {
   className?: string;
 }
 
-export function ForecastChart({ data, className }: ForecastChartProps) {
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background-card border border-border-primary rounded-lg p-3 shadow-lg">
-          <p className="text-xs text-text-muted mb-1">{formatDate(label, 'medium')}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-sm text-text-secondary capitalize">
-                {entry.dataKey}:
-              </span>
-              <span className="text-sm font-medium text-text-primary">
-                {formatCurrency(entry.value)}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+function ForecastTooltip({ active, payload, label }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background-card border border-border-primary rounded-lg p-3 shadow-lg">
+        <p className="text-xs text-text-muted mb-1">{formatDate(label, 'medium')}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center gap-2">
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-sm text-text-secondary capitalize">
+              {entry.dataKey}:
+            </span>
+            <span className="text-sm font-medium text-text-primary">
+              {formatCurrency(entry.value)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
 
+export function ForecastChart({ data, className }: ForecastChartProps) {
   return (
     <div className={className}>
       <ResponsiveContainer width="100%" height="100%">
@@ -81,7 +81,7 @@ export function ForecastChart({ data, className }: ForecastChartProps) {
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<ForecastTooltip />} />
           <Area
             type="monotone"
             dataKey="projected"

@@ -19,23 +19,23 @@ interface PortfolioChartProps {
   className?: string;
 }
 
-export function PortfolioChart({ data, className }: PortfolioChartProps) {
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background-card border border-border-primary rounded-lg px-3 py-2 shadow-lg">
-          <p className="text-xs text-text-muted">
-            {formatDate(label, 'medium')}
-          </p>
-          <p className="text-lg font-semibold text-accent-green">
-            {formatCurrency(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+function PortfolioTooltip({ active, payload, label }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background-card border border-border-primary rounded-lg px-3 py-2 shadow-lg">
+        <p className="text-xs text-text-muted">
+          {formatDate(label, 'medium')}
+        </p>
+        <p className="text-lg font-semibold text-accent-green">
+          {formatCurrency(payload[0].value)}
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
 
+export function PortfolioChart({ data, className }: PortfolioChartProps) {
   return (
     <div className={className}>
       <ResponsiveContainer width="100%" height="100%">
@@ -67,7 +67,7 @@ export function PortfolioChart({ data, className }: PortfolioChartProps) {
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<PortfolioTooltip />} />
           <Area
             type="monotone"
             dataKey="value"

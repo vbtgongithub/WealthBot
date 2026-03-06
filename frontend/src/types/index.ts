@@ -10,7 +10,83 @@ export type {
   PrivacyLog,
 } from '@/constants/data';
 
-// User Types
+// =============================================================================
+// Auth Types (match backend app/schemas/user.py)
+// =============================================================================
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  monthly_income?: number;
+  savings_goal?: number;
+  currency?: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  monthly_income: number | null;
+  savings_goal: number | null;
+  currency: string;
+  is_active: boolean;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+// =============================================================================
+// Safe-to-Spend Types (match backend app/schemas/prediction.py)
+// =============================================================================
+
+export interface SafeToSpendData {
+  amount: number;
+  safe_until: string;
+  daily_allowance: number;
+  risk_level: string;
+  days_until_payday: number;
+  model_used: 'heuristic' | 'xgboost';
+  is_ml_active: boolean;
+  recommendations: string[];
+}
+
+// =============================================================================
+// Transaction Types (match backend app/schemas/transaction.py)
+// =============================================================================
+
+export interface TransactionData {
+  id: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  transaction_type: string;
+  category: string;
+  description: string | null;
+  merchant_name: string | null;
+  notes: string | null;
+  predicted_category: string | null;
+  category_confidence: number | null;
+  is_recurring: boolean;
+  transaction_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Legacy User type (kept for backward compat with mock-data pages)
 export interface User {
   id: string;
   name: string;
@@ -88,6 +164,6 @@ export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
-  pageSize: number;
-  totalPages: number;
+  page_size: number;
+  total_pages: number;
 }

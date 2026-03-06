@@ -1,77 +1,73 @@
 // =============================================================================
-// WealthBot User Store — Zustand
-// Manages Safe-to-Spend state, transactions, and user preferences
+// WealthBot UI Store — Zustand
+// Client-only UI state. All server/API data lives in React Query.
 // =============================================================================
 
+import { useEffect, useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { MOCK_TRANSACTIONS, type WBTransaction } from '@/constants/data';
 
-interface UserState {
-  // User profile
-  userName: string;
-  safeToSpend: number;
-  safeUntil: string;
-  monthlyBudget: number;
-  netWorth: number;
-
-  // Transaction data
-  transactions: WBTransaction[];
-
-  // ML / Developer settings
+interface UIState {
   devMode: boolean;
-  statementStatus: 'idle' | 'processing' | 'success' | 'error';
-
-  // Actions
-  setUserName: (name: string) => void;
-  setSafeToSpend: (amount: number) => void;
-  setNetWorth: (amount: number) => void;
   setDevMode: (enabled: boolean) => void;
+
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
+
+  assistantOpen: boolean;
+  setAssistantOpen: (open: boolean) => void;
+
+  statementStatus: 'idle' | 'processing' | 'success' | 'error';
   setStatementStatus: (status: 'idle' | 'processing' | 'success' | 'error') => void;
-  updateTransactionCategory: (id: string, newCategory: string) => void;
-  refreshData: () => void;
+
+  netWorth: number;
+  setNetWorth: (amount: number) => void;
 }
 
-export const useUserStore = create<UserState>()(
+export const useUserStore = create<UIState>()(
   persist(
     (set) => ({
-      // Defaults — Indian student context
-      userName: 'Muzaffar',
-      safeToSpend: 850,
-      safeUntil: 'Friday',
-      monthlyBudget: 15000,
+      devMode: false,
+      sidebarOpen: false,
+      assistantOpen: false,
+      statementStatus: 'idle',
       netWorth: 50000,
 
-      transactions: MOCK_TRANSACTIONS,
-
-      devMode: false,
-      statementStatus: 'idle',
-
-      // Setters
-      setUserName: (name) => set({ userName: name }),
-      setSafeToSpend: (amount) => set({ safeToSpend: amount }),
-      setNetWorth: (amount) => set({ netWorth: amount }),
       setDevMode: (enabled) => set({ devMode: enabled }),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+      setAssistantOpen: (open) => set({ assistantOpen: open }),
       setStatementStatus: (status) => set({ statementStatus: status }),
-
-      updateTransactionCategory: (id, newCategory) =>
-        set((state) => ({
-          transactions: state.transactions.map((t) =>
-            t.id === id ? { ...t, category: newCategory } : t
-          ),
-        })),
-
-      // Simulate a model refresh — randomises Safe-to-Spend slightly
-      refreshData: () =>
-        set((state) => ({
-          safeToSpend: Math.max(
-            100,
-            state.safeToSpend + Math.floor(Math.random() * 200 - 100)
-          ),
-        })),
+      setNetWorth: (amount) => set({ netWorth: amount }),
     }),
     {
-      name: 'wealthbot-user-storage',
+      name: 'wealthbot-ui-storage',
+      partialize: (state) => ({
+        devMode: state.devMode,
+        netWorth: state.netWorth,
+      }),
+      skipHydration: true,
     }
   )
 );
+
+/**
+ * Hook to safely hydrate persisted Zustand state on the client,
+ * preventing server/client mismatch during SSR.
+ */
+const emptySubscribe = () => () => {};
+
+export function useHydration() {
+  const hydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+
+  useEffect(() => {
+    useUserStore.persist.rehydrate();
+  }, []);
+
+  return hydrated;
+}

@@ -1,8 +1,10 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { Menu, Bot } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { AuraAssistant } from '@/components/assistant/AuraAssistant';
+import { useUserStore } from '@/stores/userStore';
 import type { AssistantMessage } from '@/types';
 
 interface MainLayoutProps {
@@ -23,24 +25,51 @@ export function MainLayout({
     plan: 'Pro Plan',
   };
 
+  const { toggleSidebar, assistantOpen, setAssistantOpen } = useUserStore();
+
   return (
     <div className="min-h-screen bg-background-primary flex">
       {/* Sidebar */}
       <Sidebar user={user} />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 mr-80">
-        <div className="p-8">{children}</div>
+      <main className="flex-1 lg:ml-64 xl:mr-80">
+        {/* Mobile top bar */}
+        <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-background-primary/80 backdrop-blur-sm border-b border-border-primary lg:hidden">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg hover:bg-background-hover text-text-secondary"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <span className="text-sm font-semibold text-text-primary">WealthBot</span>
+          <button
+            onClick={() => setAssistantOpen(!assistantOpen)}
+            className="p-2 rounded-lg hover:bg-background-hover text-text-secondary xl:hidden"
+          >
+            <Bot className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
 
-      {/* AI Assistant */}
-      <div className="fixed right-0 top-0 h-full">
+      {/* AI Assistant — always visible on xl, togglable on smaller screens */}
+      <div className={`fixed right-0 top-0 h-full z-40 transition-transform duration-200 ${assistantOpen ? 'translate-x-0' : 'translate-x-[105%] xl:translate-x-0'}`}>
         <AuraAssistant
           messages={assistantMessages}
           onSendMessage={onAssistantMessage}
           placeholder={assistantPlaceholder}
         />
       </div>
+
+      {/* Backdrop for assistant on mobile */}
+      {assistantOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 xl:hidden"
+          onClick={() => setAssistantOpen(false)}
+        />
+      )}
     </div>
   );
 }

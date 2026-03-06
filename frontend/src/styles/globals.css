@@ -10,7 +10,7 @@
   }
 
   body {
-    @apply bg-background-primary text-text-primary font-sans antialiased;
+    @apply bg-background-primary text-text-primary font-sans antialiased overflow-x-hidden;
   }
 
   ::-webkit-scrollbar {
@@ -28,7 +28,7 @@
 
 @layer components {
   .card {
-    @apply bg-background-card rounded-xl border border-border-primary p-6 shadow-card;
+    @apply bg-background-card rounded-xl border border-border-primary p-4 sm:p-6 shadow-card;
   }
 
   .card-hover {
@@ -131,5 +131,13 @@
 
   .glass {
     @apply bg-background-card/80 backdrop-blur-sm;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

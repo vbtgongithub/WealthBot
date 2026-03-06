@@ -134,7 +134,7 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        <div className="h-64">
+        <div className="h-48 sm:h-56 md:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={velocityData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />

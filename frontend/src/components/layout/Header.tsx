@@ -1,7 +1,6 @@
 'use client';
 
 import { Bell, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   title: string;
@@ -15,9 +14,9 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, userName, action }: HeaderProps) {
   return (
-    <header className="flex items-center justify-between mb-8">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">
+    <header className="flex items-center justify-between mb-6 sm:mb-8">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-text-primary truncate">
           {title}
           {userName && <span>, {userName}</span>}
         </h1>
@@ -28,7 +27,7 @@ export function Header({ title, subtitle, userName, action }: HeaderProps) {
 
       <div className="flex items-center gap-4">
         {/* Notification Bell */}
-        <button className="relative p-2 rounded-lg bg-background-card hover:bg-background-hover border border-border-primary transition-colors">
+        <button className="relative p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-background-card hover:bg-background-hover border border-border-primary transition-colors">
           <Bell className="w-5 h-5 text-text-secondary" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-accent-green rounded-full" />
         </button>
