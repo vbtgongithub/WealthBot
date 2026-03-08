@@ -92,9 +92,8 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Edit .env — at minimum set:
-#   DATABASE_URL=postgresql+asyncpg://wealthbot_user:wealthbot_secret@localhost:5432/wealthbot_db
-#   SECRET_KEY=<generate-a-secure-random-key>
+# Edit .env — at minimum set DATABASE_URL and SECRET_KEY
+# Generate a secure secret key with: openssl rand -hex 32
 ```
 
 ### 3. Database Setup
@@ -378,7 +377,7 @@ WealthBot/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | `postgresql+asyncpg://...@localhost:5432/wealthbot_db` | Async PostgreSQL connection |
-| `SECRET_KEY` | `dev-secret-key-change-in-prod` | JWT signing key (**change in prod**) |
+| `SECRET_KEY` | *(none — must be set)* | JWT signing key (**required**) |
 | `APP_ENV` | `development` | Environment name |
 | `DEBUG` | `true` | Debug mode toggle |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |

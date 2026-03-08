@@ -71,7 +71,7 @@ Backend (FastAPI)          Frontend (Next.js 16)      ML Pipeline
 Python:      3.12  (venv at .venv/)
 Node:        LTS   (frontend/)
 PostgreSQL:  18    (localhost:5432)
-DB User:     wealthbot_user / wealthbot_secret
+DB User:     (see .env file)
 DB Name:     wealthbot_db
 Extensions:  uuid-ossp, pg_trgm
 Key pins:    bcrypt==4.0.1 (passlib compat), asyncpg, sqlalchemy[asyncio]
@@ -80,8 +80,8 @@ ML pins:     xgboost>=2.0.3, transformers>=4.37.0, torch>=2.9.0, scikit-learn>=1
 ML runtime:  ONNX Runtime (CPU, 16GB RAM) — training on Google Colab (T4 GPU)
 ```
 
-- **DATABASE_URL**: `postgresql+asyncpg://wealthbot_user:wealthbot_secret@localhost:5432/wealthbot_db`
-- **Demo account**: `demo@wealthbot.app` / `Demo@1234` (first_name: "Swarna", seeded with 8 transactions)
+- **DATABASE_URL**: Configured in `.env` (see `.env.example` for format)
+- **Demo account**: `demo@wealthbot.app` / password in `.env` (first_name: "Swarna", seeded with 8 transactions)
 
 ## Build and Test
 

@@ -19,6 +19,7 @@ Dummy credentials:
 import argparse
 import asyncio
 import hashlib
+import os
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -28,8 +29,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 # ── Dummy account details ────────────────────────────────────────────────────
-DUMMY_EMAIL = "demo@wealthbot.app"
-DUMMY_PASSWORD = "Demo@1234"
+DUMMY_EMAIL = os.environ.get("DEMO_EMAIL", "demo@wealthbot.app")
+DUMMY_PASSWORD = os.environ.get("DEMO_PASSWORD", "Demo@1234")
 DUMMY_FIRST_NAME = "Swarna"
 DUMMY_LAST_NAME = "Demo"
 DUMMY_MONTHLY_INCOME = Decimal("50000.00")

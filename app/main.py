@@ -42,6 +42,16 @@ class RootResponse(BaseModel):
 # =============================================================================
 
 
+_INSECURE_SECRETS = {
+    "",
+    "dev-secret-key-change-in-production",
+    "dev-secret-key-change-in-prod",
+    "your-super-secret-key-change-in-production",
+    "changeme",
+    "secret",
+}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
@@ -50,6 +60,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     - Startup: Initialize database connection pool
     - Shutdown: Close database connections gracefully
     """
+    # Security: warn if running with insecure secret key
+    import logging
+
+    logger = logging.getLogger("wealthbot.security")
+    if settings.secret_key in _INSECURE_SECRETS:
+        if settings.app_env in ("production", "staging"):
+            raise RuntimeError(
+                "FATAL: SECRET_KEY is insecure. "
+                "Set a strong SECRET_KEY in your environment before running in production. "
+                "Generate one with: openssl rand -hex 32"
+            )
+        logger.warning(
+            "SECRET_KEY is using an insecure default. "
+            "This is acceptable for local development only. "
+            "Generate a secure key with: openssl rand -hex 32"
+        )
+
     # Startup
     db_manager = DatabaseManager()
     await db_manager.initialize()

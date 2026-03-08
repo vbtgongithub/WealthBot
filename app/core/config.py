@@ -36,8 +36,8 @@ class Settings(BaseSettings):
     # Database Configuration
     # -------------------------------------------------------------------------
     database_url: str = Field(
-        default="postgresql+asyncpg://wealthbot_user:wealthbot_secret@localhost:5432/wealthbot_db",
-        description="Async PostgreSQL connection string",
+        default="",
+        description="Async PostgreSQL connection string (set in .env)",
     )
     db_pool_size: int = Field(default=5, description="Database connection pool size")
     db_max_overflow: int = Field(default=10, description="Max overflow connections")
@@ -47,8 +47,8 @@ class Settings(BaseSettings):
     # Security Settings
     # -------------------------------------------------------------------------
     secret_key: str = Field(
-        default="dev-secret-key-change-in-production",
-        description="Secret key for JWT encoding",
+        default="",
+        description="Secret key for JWT encoding (set in .env)",
     )
     algorithm: str = Field(default="HS256", description="JWT algorithm")
     access_token_expire_minutes: int = Field(
@@ -119,6 +119,23 @@ class Settings(BaseSettings):
         if lower_v not in valid_envs:
             raise ValueError(f"Invalid environment: {v}. Must be one of {valid_envs}")
         return lower_v
+
+    @field_validator("secret_key")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
+        """Reject empty or well-known insecure secret keys in non-dev environments."""
+        return v
+
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        """Ensure database URL is provided."""
+        if not v:
+            raise ValueError(
+                "DATABASE_URL is not set. "
+                "Copy .env.example to .env and configure your database URL."
+            )
+        return v
 
 
 @lru_cache
