@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.db.database import get_db_session
-from app.db.models import Transaction, User
+from app.db.models import Transaction, TransactionCategory, User
 from app.schemas.common import PaginatedResponse
 from app.schemas.transaction import (
     CategoryUpdateRequest,
@@ -21,6 +21,7 @@ from app.schemas.transaction import (
     TransactionResponse,
     TransactionUpdate,
 )
+from app.services.ml_service import MLService, get_ml_service
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -118,19 +119,43 @@ async def create_transaction(
     body: TransactionCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
+    ml_service: MLService = Depends(get_ml_service),
 ) -> Transaction:
-    """Create a new transaction for the current user."""
+    """Create a new transaction for the current user.
+
+    When category is the default (OTHER) and merchant_name or description
+    is provided, auto-categorize via the DistilBERT ONNX model.
+    """
+    category_value = body.category.value
+    predicted_category: str | None = None
+    category_confidence: float | None = None
+
+    # Auto-categorize if category was not explicitly set
+    if body.category == TransactionCategory.OTHER and (
+        body.merchant_name or body.description
+    ):
+        text = " ".join(filter(None, [body.merchant_name, body.description]))
+        pred_cat, pred_conf = await ml_service.categorize_transaction(
+            text, user_id=str(current_user.id)
+        )
+        if pred_cat is not None:
+            predicted_category = pred_cat
+            category_confidence = pred_conf
+            category_value = pred_cat
+
     txn = Transaction(
         user_id=current_user.id,
         amount=body.amount,
         currency=body.currency,
         transaction_type=body.transaction_type.value,
-        category=body.category.value,
+        category=category_value,
         description=body.description,
         merchant_name=body.merchant_name,
         notes=body.notes,
         is_recurring=body.is_recurring,
         transaction_date=body.transaction_date or datetime.now(UTC),
+        predicted_category=predicted_category,
+        category_confidence=predicted_category and category_confidence,
     )
     db.add(txn)
     await db.flush()

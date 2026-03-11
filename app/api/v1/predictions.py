@@ -4,11 +4,13 @@ WealthBot Predictions Router
 Safe-to-Spend endpoint with heuristic fall-back when ML model is unavailable.
 """
 
+import calendar
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Literal
 
 from fastapi import APIRouter, Depends
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,8 +40,7 @@ async def safe_to_spend(
     db: AsyncSession = Depends(get_db_session),
     ml_service: MLService = Depends(get_ml_service),
 ) -> SafeToSpendResponse:
-    """
-    Calculate the user's safe daily spending limit.
+    """Calculate the user's safe daily spending limit.
 
     Uses XGBoost when the model is loaded **and** the user has ≥10
     transactions.  Otherwise falls back to a simple heuristic so the
@@ -65,70 +66,83 @@ async def safe_to_spend(
     txn_count: int = (await db.execute(txn_count_q)).scalar_one()
 
     # ------------------------------------------------------------------
-    # Determine budget parameters
+    # Budget parameters
     # ------------------------------------------------------------------
     monthly_income = current_user.monthly_income or Decimal("0")
     savings_goal = current_user.savings_goal or Decimal("0")
 
-    # Days remaining in the month (including today)
     last_day = _last_day_of_month(now.year, now.month)
     days_remaining = max(1, (last_day - now.day) + 1)
 
+    # Recurring expenses
+    recurring_q = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+        Transaction.user_id == current_user.id,
+        Transaction.is_recurring.is_(True),
+        Transaction.transaction_type == TransactionType.EXPENSE.value,
+    )
+    recurring_expenses: Decimal = (await db.execute(recurring_q)).scalar_one()
+
     # ------------------------------------------------------------------
-    # ML path vs. heuristic path
+    # ML path: extract features if model loaded and enough transactions
     # ------------------------------------------------------------------
     use_ml = ml_service._model_loaded and txn_count >= MIN_TRANSACTIONS_FOR_ML
+    features = None
 
     if use_ml:
-        # Gather recurring expenses for MLService.calculate_safe_to_spend
-        recurring_q = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            Transaction.user_id == current_user.id,
-            Transaction.is_recurring.is_(True),
-            Transaction.transaction_type == TransactionType.EXPENSE.value,
-        )
-        recurring_expenses: Decimal = (await db.execute(recurring_q)).scalar_one()
+        # Fetch last 60 days of transactions for feature extraction
+        from ml.preprocessing.features import extract_user_features
 
-        sts_result = await ml_service.calculate_safe_to_spend(
-            user_id=current_user.id,
-            current_balance=monthly_income - month_expenses,
-            monthly_income=monthly_income,
-            monthly_savings_goal=savings_goal,
-            recurring_expenses=recurring_expenses,
-            days_until_payday=days_remaining,
-            recent_transactions=[],
+        cutoff = now - __import__("datetime").timedelta(days=60)
+        txn_rows = await db.execute(
+            select(Transaction)
+            .where(
+                Transaction.user_id == current_user.id,
+                Transaction.transaction_date >= cutoff,
+            )
+            .order_by(Transaction.transaction_date.desc())
         )
-        amount = sts_result.safe_to_spend
-        daily_allowance = sts_result.daily_allowance
-        risk_level = sts_result.risk_level
-        recommendations = sts_result.recommendations
-        model_used: Literal["heuristic", "xgboost"] = "xgboost"
-        is_ml_active = True
-    else:
-        # Heuristic: (income − savings − expenses) / days remaining
-        remaining_budget = monthly_income - savings_goal - month_expenses
-        amount = max(Decimal("0"), remaining_budget)
-        daily_allowance = max(
-            Decimal("0"),
-            (remaining_budget / Decimal(str(days_remaining))).quantize(Decimal("0.01")),
+        txn_list = [
+            {
+                "amount": float(t.amount),
+                "transaction_type": t.transaction_type,
+                "category": t.category or "Other",
+                "is_recurring": t.is_recurring,
+                "transaction_date": t.transaction_date,
+            }
+            for t in txn_rows.scalars().all()
+        ]
+        features = await run_in_threadpool(
+            extract_user_features,
+            txn_list,
+            float(monthly_income),
+            now,
         )
-        risk_level = _heuristic_risk(remaining_budget, monthly_income)
-        recommendations = _heuristic_recommendations(
-            risk_level, days_remaining, remaining_budget
-        )
-        model_used = "heuristic"
-        is_ml_active = False
 
+    # ------------------------------------------------------------------
+    # Delegate to MLService (handles ML vs heuristic internally)
+    # ------------------------------------------------------------------
+    result = await ml_service.calculate_safe_to_spend(
+        user_id=str(current_user.id),
+        monthly_income=monthly_income,
+        savings_goal=savings_goal,
+        month_expenses=month_expenses,
+        recurring_expenses=recurring_expenses,
+        days_remaining=days_remaining,
+        features=features,
+    )
+
+    model_used: Literal["heuristic", "xgboost"] = result["model_used"]
     safe_until = f"{now.year}-{now.month:02d}-{last_day:02d}"
 
     return SafeToSpendResponse(
-        amount=amount,
+        amount=result["amount"],
         safe_until=safe_until,
-        daily_allowance=daily_allowance,
-        risk_level=risk_level,
+        daily_allowance=result["daily_allowance"],
+        risk_level=result["risk_level"],
         days_until_payday=days_remaining,
         model_used=model_used,
-        is_ml_active=is_ml_active,
-        recommendations=recommendations,
+        is_ml_active=(model_used == "xgboost"),
+        recommendations=result["recommendations"],
     )
 
 
@@ -139,36 +153,4 @@ async def safe_to_spend(
 
 def _last_day_of_month(year: int, month: int) -> int:
     """Return the last calendar day for the given year/month."""
-    import calendar
-
     return calendar.monthrange(year, month)[1]
-
-
-def _heuristic_risk(remaining: Decimal, income: Decimal) -> str:
-    if income <= 0:
-        return "high"
-    ratio = remaining / income
-    if ratio >= Decimal("0.30"):
-        return "low"
-    if ratio >= Decimal("0.15"):
-        return "medium"
-    return "high"
-
-
-def _heuristic_recommendations(
-    risk: str, days_left: int, remaining: Decimal
-) -> list[str]:
-    tips: list[str] = []
-    if risk == "high":
-        tips.append("Your spending is high — consider cutting discretionary purchases.")
-        tips.append("Review recurring subscriptions for potential savings.")
-    elif risk == "medium":
-        tips.append("You're on track but watch large one-time expenses.")
-    else:
-        tips.append("Great job! You're well within your budget this month.")
-
-    if days_left <= 5:
-        tips.append(f"Only {days_left} day(s) left this month — spend carefully.")
-    if remaining <= 0:
-        tips.append("You've exceeded your budget. Avoid non-essential spending.")
-    return tips
