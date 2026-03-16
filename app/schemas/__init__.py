@@ -24,6 +24,7 @@ from app.schemas.transaction import (
 )
 from app.schemas.user import (
     LoginRequest,
+    RefreshRequest,
     TokenResponse,
     UserCreate,
     UserResponse,
@@ -38,6 +39,7 @@ __all__ = [
     "LoginRequest",
     "MessageResponse",
     "PaginatedResponse",
+    "RefreshRequest",
     "SafeToSpendResponse",
     "SpendingVelocityResponse",
     "SpendingPredictionResponse",

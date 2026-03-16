@@ -43,16 +43,24 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RefreshRequest(BaseModel):
+    """Schema for token refresh request."""
+
+    refresh_token: str
+
+
 # =============================================================================
 # Response Schemas
 # =============================================================================
 
 
 class TokenResponse(BaseModel):
-    """JWT token response."""
+    """JWT token response with access and refresh tokens."""
 
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
+    expires_in: int
 
 
 class UserResponse(BaseModel):
