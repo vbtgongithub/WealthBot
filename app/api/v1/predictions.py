@@ -45,7 +45,21 @@ async def safe_to_spend(
     Uses XGBoost when the model is loaded **and** the user has ≥10
     transactions.  Otherwise falls back to a simple heuristic so the
     frontend always shows a number.
+
+    Results are cached in Redis for 5 minutes when available.
     """
+    from app.core.config import settings
+
+    user_id = str(current_user.id)
+
+    # Check Redis cache first
+    if settings.redis_enabled:
+        from app.core.cache import get_cached_prediction
+
+        cached = await get_cached_prediction(user_id)
+        if cached is not None:
+            return SafeToSpendResponse(**cached)
+
     now = datetime.now(UTC)
 
     # ------------------------------------------------------------------
@@ -134,7 +148,7 @@ async def safe_to_spend(
     model_used: Literal["heuristic", "xgboost"] = result["model_used"]
     safe_until = f"{now.year}-{now.month:02d}-{last_day:02d}"
 
-    return SafeToSpendResponse(
+    response = SafeToSpendResponse(
         amount=result["amount"],
         safe_until=safe_until,
         daily_allowance=result["daily_allowance"],
@@ -144,6 +158,14 @@ async def safe_to_spend(
         is_ml_active=(model_used == "xgboost"),
         recommendations=result["recommendations"],
     )
+
+    # Cache result in Redis
+    if settings.redis_enabled:
+        from app.core.cache import set_cached_prediction
+
+        await set_cached_prediction(user_id, response.model_dump(mode="json"))
+
+    return response
 
 
 # =============================================================================
