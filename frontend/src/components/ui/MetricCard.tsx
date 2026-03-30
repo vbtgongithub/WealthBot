@@ -49,7 +49,7 @@ export function MetricCard({
           <p className="text-2xl font-bold text-text-primary">{formattedValue}</p>
         </div>
         {icon && (
-          <div className="p-2 rounded-lg bg-accent-green/10 text-accent-green">
+          <div className="p-2 rounded-lg bg-brand-primary/10 text-brand-primary">
             {icon}
           </div>
         )}

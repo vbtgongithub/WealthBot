@@ -23,7 +23,7 @@ interface ForecastChartProps {
 function ForecastTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background-card border border-border-primary rounded-lg p-3 shadow-lg">
+      <div className="bg-background-card/80 backdrop-blur-[12px] border border-border-primary rounded-lg p-3 shadow-lg">
         <p className="text-xs text-text-muted mb-1">{formatDate(label, 'medium')}</p>
         {payload.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2">

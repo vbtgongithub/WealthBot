@@ -29,7 +29,7 @@ export function TimeRangeSelector({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200',
             activeRange === range.value
-              ? 'bg-background-card text-text-primary'
+              ? 'bg-brand-primary/10 text-brand-primary'
               : 'text-text-muted hover:text-text-secondary'
           )}
         >

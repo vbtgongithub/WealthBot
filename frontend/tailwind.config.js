@@ -8,17 +8,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Aura.fi Dark Theme
+        // WealthBot Dark Theme — Fundly-inspired dual-accent system
         background: {
           primary: '#0a0f1a',
           secondary: '#0f1629',
           card: '#141b2d',
           hover: '#1a2338',
         },
+        brand: {
+          primary: '#F97316',
+          'primary-dark': '#EA580C',
+          'primary-light': '#FB923C',
+        },
         accent: {
           green: '#22c55e',
           'green-dark': '#16a34a',
           'green-light': '#4ade80',
+          orange: '#F97316',
+        },
+        semantic: {
+          success: '#22c55e',
+          danger: '#ef4444',
         },
         text: {
           primary: '#ffffff',
@@ -52,11 +62,16 @@ module.exports = {
       boxShadow: {
         card: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)',
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)',
+        glass: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        'glass-hover': '0 12px 40px rgba(0, 0, 0, 0.4)',
+        'glow-orange': '0 0 40px rgba(249, 115, 22, 0.15)',
+        'glow-green': '0 0 40px rgba(34, 197, 94, 0.15)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        float: 'float 6s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -66,6 +81,10 @@ module.exports = {
         slideUp: {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
       },
     },

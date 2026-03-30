@@ -27,6 +27,9 @@
 }
 
 @layer components {
+  /* ------------------------------------------------------------------ */
+  /* Cards                                                               */
+  /* ------------------------------------------------------------------ */
   .card {
     @apply bg-background-card rounded-xl border border-border-primary p-4 sm:p-6 shadow-card;
   }
@@ -35,26 +38,60 @@
     @apply card transition-all duration-200 hover:shadow-card-hover hover:border-border-secondary;
   }
 
+  .glass-card {
+    @apply bg-background-card/60 backdrop-blur-xl rounded-2xl
+           border border-white/[0.06] p-4 sm:p-6 shadow-glass;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300
+           hover:shadow-glass-hover hover:border-white/[0.12]
+           hover:bg-background-card/70;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Buttons                                                             */
+  /* ------------------------------------------------------------------ */
   .btn-primary {
-    @apply bg-accent-green hover:bg-accent-green-dark text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+    @apply bg-brand-primary hover:bg-brand-primary-dark text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200;
   }
 
   .btn-secondary {
     @apply bg-background-hover hover:bg-border-primary text-text-primary font-medium px-4 py-2 rounded-lg border border-border-primary transition-colors duration-200;
   }
 
-  .input {
-    @apply bg-background-secondary border border-border-primary rounded-lg px-4 py-2 text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-green transition-colors duration-200;
+  .btn-brand {
+    @apply bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold
+           px-6 py-3 rounded-xl transition-all duration-200
+           shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/30;
   }
 
+  .btn-brand-outline {
+    @apply border border-brand-primary/40 text-brand-primary hover:bg-brand-primary/10
+           font-medium px-6 py-3 rounded-xl transition-all duration-200;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Inputs                                                              */
+  /* ------------------------------------------------------------------ */
+  .input {
+    @apply bg-background-secondary border border-border-primary rounded-lg px-4 py-2 text-text-primary placeholder-text-muted focus:outline-none focus:border-brand-primary transition-colors duration-200;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Navigation                                                          */
+  /* ------------------------------------------------------------------ */
   .nav-item {
     @apply flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-background-hover hover:text-text-primary transition-colors duration-200 cursor-pointer;
   }
 
   .nav-item-active {
-    @apply nav-item bg-accent-green/10 text-accent-green hover:bg-accent-green/20;
+    @apply nav-item bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Metrics                                                             */
+  /* ------------------------------------------------------------------ */
   .metric-card {
     @apply card flex flex-col gap-2;
   }
@@ -71,6 +108,9 @@
     @apply card h-80;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Badges                                                              */
+  /* ------------------------------------------------------------------ */
   .badge {
     @apply inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium;
   }
@@ -87,6 +127,9 @@
     @apply badge bg-status-error/20 text-status-error;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Tables                                                              */
+  /* ------------------------------------------------------------------ */
   .table-header {
     @apply text-left text-sm font-medium text-text-secondary py-3 px-4;
   }
@@ -99,6 +142,9 @@
     @apply border-b border-border-primary hover:bg-background-hover transition-colors duration-150;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Progress & Gauge                                                    */
+  /* ------------------------------------------------------------------ */
   .progress-bar {
     @apply h-2 rounded-full bg-background-secondary overflow-hidden;
   }
@@ -111,6 +157,9 @@
     @apply relative w-32 h-16 overflow-hidden;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Assistant                                                           */
+  /* ------------------------------------------------------------------ */
   .assistant-bubble {
     @apply bg-background-secondary rounded-lg p-3 text-sm text-text-secondary max-w-xs;
   }
@@ -125,12 +174,33 @@
     @apply bg-gradient-to-r from-accent-green to-accent-green-light bg-clip-text text-transparent;
   }
 
+  .text-gradient-orange {
+    @apply bg-gradient-to-r from-brand-primary to-brand-primary-light bg-clip-text text-transparent;
+  }
+
   .animate-in {
     @apply animate-fade-in;
   }
 
   .glass {
     @apply bg-background-card/80 backdrop-blur-sm;
+  }
+
+  .glow-orange {
+    box-shadow: 0 0 60px rgba(249, 115, 22, 0.12), 0 0 120px rgba(249, 115, 22, 0.06);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 60px rgba(34, 197, 94, 0.12), 0 0 120px rgba(34, 197, 94, 0.06);
+  }
+
+  .bg-gradient-hero {
+    background: radial-gradient(ellipse at 30% 20%, rgba(249, 115, 22, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+  }
+
+  .bg-gradient-section {
+    background: radial-gradient(ellipse at 50% 0%, rgba(249, 115, 22, 0.04) 0%, transparent 60%);
   }
 
   .scrollbar-hide {

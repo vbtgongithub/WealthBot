@@ -31,7 +31,9 @@ export interface RegisterRequest {
 
 export interface TokenResponse {
   access_token: string;
+  refresh_token: string;
   token_type: string;
+  expires_in: number;
 }
 
 export interface UserProfile {
@@ -166,4 +168,54 @@ export interface PaginatedResponse<T> {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+// =============================================================================
+// Phase 5 API Types
+// =============================================================================
+
+export interface VelocityPoint {
+  week: string;
+  this_month: number;
+  last_month: number;
+}
+
+export interface CategoryVelocity {
+  category: string;
+  this_month: number;
+  last_month: number;
+}
+
+export interface SpendingVelocityResponse {
+  weekly: VelocityPoint[];
+  categories: CategoryVelocity[];
+}
+
+export interface SubscriptionInsight {
+  merchant_name: string;
+  amount: number;
+  currency: string;
+  frequency: string;
+  occurrences: number;
+  last_charge_date: string;
+  next_due_date: string;
+  next_due_in_days: number;
+}
+
+export interface SubscriptionsResponse {
+  subscriptions: SubscriptionInsight[];
+  total_monthly_commitment: number;
+}
+
+export interface StatementUploadResponse {
+  created_count: number;
+  skipped_count: number;
+  detected_file_type: string;
+  message: string;
+}
+
+export interface AIChatResponse {
+  reply: string;
+  suggestions: string[];
+  confidence: number;
 }

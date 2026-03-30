@@ -27,9 +27,9 @@ export function Header({ title, subtitle, userName, action }: HeaderProps) {
 
       <div className="flex items-center gap-4">
         {/* Notification Bell */}
-        <button className="relative p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-background-card hover:bg-background-hover border border-border-primary transition-colors">
+        <button aria-label="Notifications" className="relative p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-background-card hover:bg-background-hover border border-border-primary transition-colors">
           <Bell className="w-5 h-5 text-text-secondary" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-accent-green rounded-full" />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-brand-primary rounded-full" />
         </button>
 
         {/* Action Button */}

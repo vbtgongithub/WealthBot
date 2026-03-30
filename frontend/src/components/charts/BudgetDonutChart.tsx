@@ -18,7 +18,7 @@ function DonutTooltip({ active, payload }: any) {
     const total = payload[0].payload._total as number;
     const percentage = ((item.value / total) * 100).toFixed(1);
     return (
-      <div className="bg-background-card border border-border-primary rounded-lg px-3 py-2 shadow-lg">
+      <div className="bg-background-card/80 backdrop-blur-[12px] border border-border-primary rounded-lg px-3 py-2 shadow-lg">
         <p className="text-sm font-medium text-text-primary">{item.name}</p>
         <p className="text-xs text-text-muted">
           {formatCurrency(item.value)} ({percentage}%)

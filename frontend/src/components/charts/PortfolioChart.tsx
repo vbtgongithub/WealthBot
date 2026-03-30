@@ -22,7 +22,7 @@ interface PortfolioChartProps {
 function PortfolioTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background-card border border-border-primary rounded-lg px-3 py-2 shadow-lg">
+      <div className="bg-background-card/80 backdrop-blur-[12px] border border-border-primary rounded-lg px-3 py-2 shadow-lg">
         <p className="text-xs text-text-muted">
           {formatDate(label, 'medium')}
         </p>
