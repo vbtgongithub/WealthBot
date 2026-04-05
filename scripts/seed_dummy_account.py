@@ -1,7 +1,8 @@
 """
-Seed Dummy Account
-==================
-Creates a dummy user account for local development and testing.
+Seed Student Account
+====================
+Creates a realistic student persona with 7,400+ synthetic transactions
+for local development and testing.
 
 Usage (pick one):
 
@@ -11,31 +12,36 @@ Usage (pick one):
   # Option B — Only database is running (no backend):
   python scripts/seed_dummy_account.py --direct
 
-Dummy credentials:
-  Email:    demo@wealthbot.app
-  Password: Demo@1234
+Credentials:
+  Email:    student@wealthbot.in
+  Password: SecureDemo!2026
 """
 
 import argparse
 import asyncio
+import csv
 import hashlib
 import os
 import sys
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
+from uuid import uuid4
 
 # Ensure project root is on sys.path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-# ── Dummy account details ────────────────────────────────────────────────────
-DUMMY_EMAIL = os.environ.get("DEMO_EMAIL", "demo@wealthbot.app")
-DUMMY_PASSWORD = os.environ.get("DEMO_PASSWORD", "Demo@1234")
-DUMMY_FIRST_NAME = "Swarna"
-DUMMY_LAST_NAME = "Demo"
-DUMMY_MONTHLY_INCOME = Decimal("50000.00")
-DUMMY_SAVINGS_GOAL = Decimal("10000.00")
-DUMMY_CURRENCY = "INR"
+# ── Account details ──────────────────────────────────────────────────────────
+DEMO_EMAIL = os.environ.get("DEMO_EMAIL", "student@wealthbot.in")
+DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "SecureDemo!2026")
+DEMO_FIRST_NAME = "Swarna"
+DEMO_LAST_NAME = "Student"
+DEMO_MONTHLY_INCOME = Decimal("50000.00")
+DEMO_SAVINGS_GOAL = Decimal("10000.00")
+DEMO_CURRENCY = "INR"
+
+SYNTHETIC_CSV = ROOT / "ml" / "models" / "synthetic_transactions.csv"
 
 
 # =============================================================================
@@ -43,23 +49,23 @@ DUMMY_CURRENCY = "INR"
 # =============================================================================
 
 def seed_via_api() -> None:
-    """Register the dummy account through the REST API."""
+    """Register the account and bulk-insert transactions through the REST API."""
     import httpx  # noqa: delay import
 
     base = "http://localhost:8000"
 
     payload = {
-        "email": DUMMY_EMAIL,
-        "password": DUMMY_PASSWORD,
-        "first_name": DUMMY_FIRST_NAME,
-        "last_name": DUMMY_LAST_NAME,
-        "monthly_income": float(DUMMY_MONTHLY_INCOME),
-        "savings_goal": float(DUMMY_SAVINGS_GOAL),
-        "currency": DUMMY_CURRENCY,
+        "email": DEMO_EMAIL,
+        "password": DEMO_PASSWORD,
+        "first_name": DEMO_FIRST_NAME,
+        "last_name": DEMO_LAST_NAME,
+        "monthly_income": float(DEMO_MONTHLY_INCOME),
+        "savings_goal": float(DEMO_SAVINGS_GOAL),
+        "currency": DEMO_CURRENCY,
     }
 
     # 1. Register
-    print(f"Registering {DUMMY_EMAIL} via API …")
+    print(f"Registering {DEMO_EMAIL} via API …")
     try:
         resp = httpx.post(f"{base}/api/v1/auth/register", json=payload, timeout=10)
     except httpx.ConnectError:
@@ -79,20 +85,49 @@ def seed_via_api() -> None:
         print(f"Registration failed ({resp.status_code}): {resp.text}")
         sys.exit(1)
 
-    # 2. Login to verify
-    print("Verifying login …")
+    # 2. Login to get token
+    print("Logging in …")
     resp = httpx.post(
         f"{base}/api/v1/auth/token",
-        json={"email": DUMMY_EMAIL, "password": DUMMY_PASSWORD},
+        json={"email": DEMO_EMAIL, "password": DEMO_PASSWORD},
         timeout=10,
     )
-    if resp.status_code == 200:
-        token = resp.json()["access_token"]
-        print(f"Login successful! Token (first 20 chars): {token[:20]}…")
-    else:
+    if resp.status_code != 200:
         print(f"Login failed ({resp.status_code}): {resp.text}")
         sys.exit(1)
 
+    token = resp.json()["access_token"]
+    print(f"Login successful! Token (first 20 chars): {token[:20]}…")
+
+    # 3. Seed transactions via API (one at a time — slow but works without DB access)
+    headers = {"Authorization": f"Bearer {token}"}
+    rows = _load_csv_rows()
+    print(f"Seeding {len(rows)} transactions via API (this may take a while) …")
+
+    success = 0
+    for i, row in enumerate(rows):
+        txn_payload = {
+            "amount": float(row["amount"]),
+            "currency": row["currency"],
+            "transaction_type": row["transaction_type"],
+            "category": row["category"],
+            "description": row["description"],
+            "merchant_name": row["merchant_name"],
+            "is_recurring": row["is_recurring"] == "True",
+            "transaction_date": row["transaction_date"],
+        }
+        resp = httpx.post(
+            f"{base}/api/v1/transactions/",
+            json=txn_payload,
+            headers=headers,
+            timeout=10,
+        )
+        if resp.status_code in (200, 201):
+            success += 1
+        if (i + 1) % 500 == 0:
+            print(f"  … {i + 1}/{len(rows)} inserted")
+
+    print(f"Transactions seeded: {success}/{len(rows)}")
     _print_credentials()
 
 
@@ -101,13 +136,13 @@ def seed_via_api() -> None:
 # =============================================================================
 
 async def seed_via_db() -> None:
-    """Insert the dummy user directly into the database."""
+    """Insert user + transactions directly into the database."""
     from sqlalchemy import select
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
     from app.core.config import settings
     from app.core.security import hash_password
-    from app.db.models import Base, User
+    from app.db.models import Base, Transaction, User
 
     db_url = settings.database_url
     is_sqlite = db_url.startswith("sqlite")
@@ -128,30 +163,79 @@ async def seed_via_db() -> None:
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with session_factory() as session:
-        # Check if user already exists
+        # ── 1. Create or find user ───────────────────────────────────────
         result = await session.execute(
-            select(User).where(User.email == DUMMY_EMAIL)
+            select(User).where(User.email == DEMO_EMAIL)
         )
         existing = result.scalar_one_or_none()
 
         if existing:
-            print(f"User {DUMMY_EMAIL} already exists (id={existing.id}) — skipping.")
+            user_id = existing.id
+            print(f"User {DEMO_EMAIL} already exists (id={user_id}) — skipping user creation.")
         else:
             user = User(
-                email=DUMMY_EMAIL,
-                email_hash=hashlib.sha256(DUMMY_EMAIL.encode()).hexdigest(),
-                hashed_password=hash_password(DUMMY_PASSWORD),
-                first_name=DUMMY_FIRST_NAME,
-                last_name=DUMMY_LAST_NAME,
-                monthly_income=DUMMY_MONTHLY_INCOME,
-                savings_goal=DUMMY_SAVINGS_GOAL,
-                currency=DUMMY_CURRENCY,
+                email=DEMO_EMAIL,
+                email_hash=hashlib.sha256(DEMO_EMAIL.encode()).hexdigest(),
+                hashed_password=hash_password(DEMO_PASSWORD),
+                first_name=DEMO_FIRST_NAME,
+                last_name=DEMO_LAST_NAME,
+                monthly_income=DEMO_MONTHLY_INCOME,
+                savings_goal=DEMO_SAVINGS_GOAL,
+                currency=DEMO_CURRENCY,
                 is_active=True,
                 is_verified=True,
             )
             session.add(user)
+            await session.flush()
+            user_id = user.id
+            print(f"User created (id={user_id}).")
+
+        # ── 2. Check if transactions already exist ───────────────────────
+        txn_count_result = await session.execute(
+            select(Transaction).where(Transaction.user_id == user_id).limit(1)
+        )
+        if txn_count_result.scalar_one_or_none():
+            print("Transactions already seeded for this user — skipping.")
             await session.commit()
-            print(f"User created (id={user.id}).")
+            await engine.dispose()
+            _print_credentials()
+            return
+
+        # ── 3. Bulk insert transactions ──────────────────────────────────
+        rows = _load_csv_rows()
+        print(f"Inserting {len(rows)} transactions …")
+
+        batch: list[Transaction] = []
+        for row in rows:
+            txn = Transaction(
+                id=str(uuid4()),
+                user_id=user_id,
+                amount=Decimal(row["amount"]),
+                currency=row["currency"],
+                transaction_type=row["transaction_type"],
+                category=row["category"],
+                description=row["description"],
+                merchant_name=row["merchant_name"],
+                is_recurring=row["is_recurring"] == "True",
+                transaction_date=datetime.fromisoformat(row["transaction_date"]),
+            )
+            batch.append(txn)
+
+            # Flush in batches of 1000 for memory efficiency
+            if len(batch) >= 1000:
+                session.add_all(batch)
+                await session.flush()
+                inserted = len(rows) - len(batch) + 1000  # approximate
+                print(f"  ... {min(inserted, len(rows))} / {len(rows)} flushed")
+                batch.clear()
+
+        # Flush remaining
+        if batch:
+            session.add_all(batch)
+            await session.flush()
+
+        await session.commit()
+        print(f"All {len(rows)} transactions inserted and bound to user {user_id}.")
 
     await engine.dispose()
     _print_credentials()
@@ -161,12 +245,31 @@ async def seed_via_db() -> None:
 # Helpers
 # =============================================================================
 
+def _load_csv_rows() -> list[dict]:
+    """Load synthetic transactions from CSV."""
+    if not SYNTHETIC_CSV.exists():
+        print(f"ERROR: Synthetic data not found at {SYNTHETIC_CSV}")
+        print("Run the generator first:")
+        print("  python ml/preprocessing/synthetic_data.py")
+        sys.exit(1)
+
+    with open(SYNTHETIC_CSV, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    print(f"Loaded {len(rows)} transactions from {SYNTHETIC_CSV.name}")
+    return rows
+
+
 def _print_credentials() -> None:
     print("\n" + "=" * 50)
-    print("  DUMMY ACCOUNT CREDENTIALS")
+    print("  WEALTHBOT STUDENT ACCOUNT")
     print("=" * 50)
-    print(f"  Email:    {DUMMY_EMAIL}")
-    print(f"  Password: {DUMMY_PASSWORD}")
+    print(f"  Email:    {DEMO_EMAIL}")
+    print(f"  Password: {DEMO_PASSWORD}")
+    print(f"  Name:     {DEMO_FIRST_NAME} {DEMO_LAST_NAME}")
+    print(f"  Income:   INR {DEMO_MONTHLY_INCOME:,.2f}/mo")
+    print(f"  Currency: {DEMO_CURRENCY}")
     print("=" * 50)
     print("\nUse these on http://localhost:3000/login\n")
 
@@ -176,7 +279,7 @@ def _print_credentials() -> None:
 # =============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Seed a dummy WealthBot account.")
+    parser = argparse.ArgumentParser(description="Seed a WealthBot student account with transactions.")
     parser.add_argument(
         "--direct",
         action="store_true",
