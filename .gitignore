@@ -48,6 +48,8 @@ ml/models/*.pkl
 ml/models/*.joblib
 ml/models/*.pt
 ml/models/*.bin
+ml/models/*.onnx
+ml/models/tokenizer.zip
 !ml/models/.gitkeep
 
 # Data (sensitive)
@@ -60,6 +62,13 @@ data/
 # Logs
 logs/
 *.log
+
+# Playwright
+.playwright-mcp/
+/e2e/
+/playwright.config.ts
+**/test-results/
+**/playwright-report/
 
 # Testing
 .coverage

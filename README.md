@@ -92,7 +92,7 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Edit .env — at minimum set DATABASE_URL and SECRET_KEY
+Lets # Edit .env — at minimum set DATABASE_URL and SECRET_KEY
 # Generate a secure secret key with: openssl rand -hex 32
 ```
 

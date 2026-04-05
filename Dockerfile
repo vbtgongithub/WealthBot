@@ -1,12 +1,12 @@
 # =============================================================================
-# WealthBot Dockerfile
+# WealthBot Backend Dockerfile
 # Multi-stage build for production-grade deployment
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # Stage 1: Builder
 # -----------------------------------------------------------------------------
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
-FROM python:3.12-slim as runtime
+FROM python:3.12-slim AS runtime
 
 # Security: Create non-root user
 RUN groupadd --gid 1000 wealthbot && \
@@ -47,8 +47,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application code
+# Copy application code (including alembic for migrations)
 COPY --chown=wealthbot:wealthbot . .
+
+# Make entrypoint executable
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Security: Switch to non-root user
 USER wealthbot
@@ -56,14 +59,14 @@ USER wealthbot
 # Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    PORT=8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
-# Expose port
 EXPOSE 8000
 
-# Run application with uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use entrypoint script: runs migrations then starts uvicorn
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

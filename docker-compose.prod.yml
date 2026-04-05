@@ -1,0 +1,39 @@
+# =============================================================================
+# WealthBot Docker Compose — Production Override
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+# =============================================================================
+#
+# Production differences:
+#   - No local PostgreSQL (use managed DB: Supabase/Neon/RDS)
+#   - No dev volumes (uses baked-in code from Docker image)
+#   - APP_ENV=production
+#   - Resource limits tightened
+# =============================================================================
+
+version: "3.9"
+
+services:
+  db:
+    # Disable local DB in production — use managed database
+    profiles:
+      - local-only
+
+  api:
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - APP_ENV=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_ENABLED=true
+      - TRUSTED_HOSTS=${TRUSTED_HOSTS}
+    volumes: []
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://api:8000}
